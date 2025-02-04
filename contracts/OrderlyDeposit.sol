@@ -1,0 +1,71 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.24;
+
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "./ErcDeposit.sol";
+
+contract OrderlyDeposit is ErcDeposit {
+    address public admin;
+    address public candidate;
+    address private __usdcToken;
+
+    modifier onlyAdmin() {
+        require(msg.sender == admin, "Only admin can call this function");
+        _;
+    }
+
+    constructor(
+        address _orderlyContractAddress,
+        address _usdcToken,
+        bytes32 _brokerHash,
+        bytes32 _tokenHash,
+        uint128 _depositFee
+    )
+        ErcDeposit(
+            _orderlyContractAddress,
+            _usdcToken,
+            _brokerHash,
+            _tokenHash,
+            _depositFee
+        )
+    {
+        __usdcToken = _usdcToken;
+        admin = msg.sender;
+    }
+
+    function depositToOrderly(
+        address sender,
+        bytes32 orderlyId,
+        uint128 amount
+    ) external onlyAdmin {
+        require(
+            IERC20(__usdcToken).balanceOf(address(this)) >= amount,
+            "Insufficient USDC."
+        );
+        deposit(sender, orderlyId, amount);
+    }
+
+    function setCandidate(address _candidate) external onlyAdmin {
+        candidate = _candidate;
+    }
+
+    function assumeAdminRole() external {
+        require(
+            msg.sender == candidate,
+            "Only the candidate can assume the admin role"
+        );
+        admin = candidate;
+        candidate = address(0);
+    }
+
+    function setDepositFee(uint128 _depositFee) external onlyAdmin {
+        depositFee = _depositFee;
+    }
+
+    function withdrawUSDC(uint256 amount) external onlyAdmin {
+        IERC20(__usdcToken).transfer(admin, amount);
+    }
+
+    receive() external payable {}
+    fallback() external payable {}
+}
