@@ -18,6 +18,7 @@ interface IOrderlyContract {
 
 contract ErcDeposit {
     address public orderlyContractAddress;
+    address public usdcToken;
     bytes32 public brokerHash;
     bytes32 public tokenHash;
     uint128 public depositFee;
@@ -30,6 +31,7 @@ contract ErcDeposit {
         uint128 _depositFee
     ) {
         orderlyContractAddress = _orderlyContractAddress;
+        usdcToken = _usdcToken;
         tokenHash = _tokenHash;
         brokerHash = _brokerHash;
         depositFee = _depositFee;

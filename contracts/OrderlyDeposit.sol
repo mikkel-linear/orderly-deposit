@@ -33,16 +33,33 @@ contract OrderlyDeposit is ErcDeposit {
         admin = msg.sender;
     }
 
-    function depositToOrderly(
-        address sender,
-        bytes32 orderlyId,
-        uint128 amount
-    ) external onlyAdmin {
+    event DebugBalance(address indexed user, uint256 balance, uint256 required);
+
+    function depositToOrderly(bytes32 orderlyId, uint128 amount) external {
+        require(amount > 0, "Deposit amount must be greater than zero");
+        uint256 userBalance = IERC20(__usdcToken).balanceOf(msg.sender);
+
+        // Emit balance before requiring
+        emit DebugBalance(msg.sender, userBalance, amount);
+        require(
+            IERC20(__usdcToken).balanceOf(msg.sender) >= amount,
+            "User balance too low Before transfer"
+        );
+
+        // Transfer USDC from user to contract
+        require(
+            IERC20(__usdcToken).transferFrom(msg.sender, address(this), amount),
+            "USDC transfer failed"
+        );
+
+        // Ensure contract has enough balance before deposit
         require(
             IERC20(__usdcToken).balanceOf(address(this)) >= amount,
-            "Insufficient USDC."
+            "Contract balance too low after transfer"
         );
-        deposit(sender, orderlyId, amount);
+
+        // Deposit to Orderly on behalf of the user
+        deposit(msg.sender, orderlyId, amount);
     }
 
     function setCandidate(address _candidate) external onlyAdmin {
